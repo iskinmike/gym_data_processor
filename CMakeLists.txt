@@ -14,12 +14,12 @@
 
 cmake_minimum_required ( VERSION 2.8.12 )
 
-project ( error_test_gym_data_processor CXX )
+project ( gym_data_processor CXX )
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g -O0")
 
 set(SOURCES
-   src/main.cpp
+    src/main.cpp
     src/data_parser.cpp
     src/data_parser.hpp
     src/utils.cpp
@@ -44,9 +44,9 @@ set(LIBS
 )
 
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+#add_executable(${PROJECT_NAME} ${SOURCES})
 
-# add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 add_custom_target ( dist ALL
      COMMAND ${CMAKE_COMMAND} -E remove_directory result
@@ -55,6 +55,9 @@ add_custom_target ( dist ALL
      COMMAND ${CMAKE_COMMAND} -E make_directory resources
      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/process_result.sh result/
      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/* resources/
+     COMMAND ${CMAKE_COMMAND} -E remove_directory lib
+     COMMAND ${CMAKE_COMMAND} -E make_directory lib
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/libgym_data_processor.so lib/
  )
 
 
