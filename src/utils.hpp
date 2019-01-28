@@ -15,10 +15,6 @@ public:
     point operator +(const point &other) const;
     point operator -(const point &other) const;
     point operator *(double d)       const;
-//    point& operator =(point&& other);
-//    const point& operator =(const point& other);
-//    point(const point& other);
-//    point(point&& other);
 };
 
 class vector_2f
@@ -40,9 +36,6 @@ struct derivative_2d_data{
     double time;
     point pos;
     int step;
-//    derivative_2d_data();
-//    derivative_2d_data(const derivative_2d_data& other);
-//    derivative_2d_data(derivative_2d_data&& other);
 };
 
 

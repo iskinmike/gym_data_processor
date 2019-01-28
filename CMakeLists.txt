@@ -24,6 +24,7 @@ set(SOURCES
     src/data_parser.hpp
     src/utils.cpp
     src/utils.hpp
+    include/data_processor_api.hpp
 )
 
 set(LIBS
@@ -33,7 +34,7 @@ set(LIBS
     # avdevice
     # swresample
     # avutil
-    pthread
+#    pthread
     # X11
     # /home/mike/hobbies/learn_gl/glfw/build/src/libglfw.so
     # ${ARTOOL_SDK}/lib/libARX.so
@@ -47,16 +48,19 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 # add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
- add_custom_target ( dist ALL
+add_custom_target ( dist ALL
      COMMAND ${CMAKE_COMMAND} -E remove_directory result
      COMMAND ${CMAKE_COMMAND} -E make_directory result
-#     COMMAND ${CMAKE_COMMAND} -E make_directory dist/resources
+     COMMAND ${CMAKE_COMMAND} -E remove_directory resources
+     COMMAND ${CMAKE_COMMAND} -E make_directory resources
      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/process_result.sh result/
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/* resources/
  )
 
 
 target_include_directories ( ${PROJECT_NAME} BEFORE PRIVATE
-#        $ENV{WILTON_HOME}/devel/include
+        ${CMAKE_CURRENT_LIST_DIR}/include
+        ${CMAKE_CURRENT_LIST_DIR}/src
         # ${ARTOOL_SDK}/include
 #        ${PLATFORM_INCLUDE}
         # /home/mike/hobbies/learn_gl/glfw/include

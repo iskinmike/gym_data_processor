@@ -46,7 +46,6 @@ struct shift_data{
     double end_time;
     double median_velocity_x;
     double median_velocity_y;
-//    shift_data() :shift_vec{}, start_pos(0), end_pos(0), start_time(0), end_time(0), median_velocity_x(0), median_velocity_y(0){}
     static std::string get_text_type(shift_type type) {
         switch (type) {
         case shift_type::down:
@@ -63,7 +62,6 @@ struct markers_data {
     point pos;
     double time;
     int64_t step;
-//    markers_data(): pos(0,0), time(0), step(0) {}
 };
 
 
@@ -102,7 +100,6 @@ struct marker_track_data {
 
 class data_parser
 {
-//    std::string filepath;
     std::vector<std::vector<markers_data>> marker_line;
     std::vector<markers_data> zero_marker_line;
     std::vector<markers_data> direction_marker_line;
@@ -138,7 +135,6 @@ public:
     void dump_amplitudes_data(const std::string& filepath, const marker_amplitude_data& data);
     void dump_derivative_to_file(const std::string& filepath, const std::vector<derivative_2d_data>& derivative);
     void dump_marker_track_to_file(const std::string& filepath, const std::vector<markers_data>& track);
-//    void dump_shifts_info_to_file(const std::string& filepath, const std::vector<markers_data>& track);
 };
 
 
