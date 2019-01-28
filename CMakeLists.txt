@@ -48,16 +48,18 @@ set(LIBS
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
-add_custom_target ( dist ALL
+message(STATUS "gym_data_processor binary dir:  ${CMAKE_CURRENT_BINARY_DIR}")
+
+add_custom_target ( gym_data_processor_dist POST_BUILD
      COMMAND ${CMAKE_COMMAND} -E remove_directory result
      COMMAND ${CMAKE_COMMAND} -E make_directory result
      COMMAND ${CMAKE_COMMAND} -E remove_directory resources
      COMMAND ${CMAKE_COMMAND} -E make_directory resources
-     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/process_result.sh result/
-     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/* resources/
      COMMAND ${CMAKE_COMMAND} -E remove_directory lib
      COMMAND ${CMAKE_COMMAND} -E make_directory lib
-     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/libgym_data_processor.so lib/
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/process_result.sh result/
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/* resources/
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/libgym_data_processor.so ${CMAKE_CURRENT_BINARY_DIR}/lib/
  )
 
 
