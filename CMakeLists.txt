@@ -14,16 +14,12 @@
 
 cmake_minimum_required ( VERSION 2.8.12 )
 
-project ( gym_data_processor CXX )
+project ( error_test_gym_data_processor CXX )
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -g -O0")
 
 set(SOURCES
-    src/main.cpp
-#    src/track_handler.cpp
-#    src/track_handler.hpp
-    src/geometry/geometry.cpp
-    src/geometry/geometry.h
+   src/main.cpp
     src/data_parser.cpp
     src/data_parser.hpp
     src/utils.cpp
@@ -49,12 +45,14 @@ set(LIBS
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# add_custom_target ( dist ALL
-    # COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-    # COMMAND ${CMAKE_COMMAND} -E make_directory dist
-    # COMMAND ${CMAKE_COMMAND} -E make_directory dist/resources
-    # COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/src/marker_drawer/resources/* dist/resources/
-# )
+# add_library(${PROJECT_NAME} SHARED ${SOURCES})
+
+ add_custom_target ( dist ALL
+     COMMAND ${CMAKE_COMMAND} -E remove_directory result
+     COMMAND ${CMAKE_COMMAND} -E make_directory result
+#     COMMAND ${CMAKE_COMMAND} -E make_directory dist/resources
+     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/resources/process_result.sh result/
+ )
 
 
 target_include_directories ( ${PROJECT_NAME} BEFORE PRIVATE

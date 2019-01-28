@@ -7,43 +7,83 @@
 
 #include "utils.hpp"
 
+
+struct point_data{
+    point pos;
+    int64_t step;
+    double time;
+    std::vector<float> matrix;
+    point_data() : pos(0,0){}
+    point_data(const point_data& other) {
+        pos = other.pos;
+        step = other.step;
+        time = other.time;
+        matrix = other.matrix;
+    }
+};
+
+enum class extremum_type {
+    min, max, plateau, valley
+};
+
+enum class coord {
+    x,y
+};
+
+enum class shift_type {
+    down, up, plateau
+};
+
 struct shift_data{
+    shift_type type;
     vector_2f shift_vec;
     double shift;
-    int start_pos;
-    int end_pos;
-    shift_data() :/*shift_vec(), */shift(0), start_pos(0), end_pos(0){}
+    double start_pos;
+    double end_pos;
+    int start_step;
+    int end_step;
+    double start_time;
+    double end_time;
+    double median_velocity_x;
+    double median_velocity_y;
+//    shift_data() :shift_vec{}, start_pos(0), end_pos(0), start_time(0), end_time(0), median_velocity_x(0), median_velocity_y(0){}
+    static std::string get_text_type(shift_type type) {
+        switch (type) {
+        case shift_type::down:
+            return std::string{"down"};
+        case shift_type::up:
+            return std::string{"up"};
+        case shift_type::plateau:
+            return std::string{"plateau"};
+        }
+    }
 };
 
 struct markers_data {
     point pos;
-    int64_t time;
+    double time;
     int64_t step;
-    markers_data(): pos(0,0), time(0), step(0) {}
+//    markers_data(): pos(0,0), time(0), step(0) {}
 };
 
-enum class extremum_type {
-    min, max, plateu, valley
-};
-
-enum class coord{
-    x,y
-};
 
 struct extremum_point {
     extremum_type type;
     int pos;
     extremum_point(int pos, extremum_type type) : type(type), pos(pos) {}
-    extremum_point():type(extremum_type::valley), pos(0) {}
 };
 
 struct marker_amplitude_data {
     coord coord_type;
     int minima_count;
     int maxima_count;
+    int plateu_count;
+    int valley_count;
     std::vector<extremum_point> extremums;
     std::vector<shift_data> shifts;
-    marker_amplitude_data(): coord_type(coord::x), minima_count(0), maxima_count(0) , extremums{}, shifts{}{}
+    marker_amplitude_data(): coord_type(coord::x),
+        minima_count(0), maxima_count(0),
+        plateu_count(0), valley_count(0) {}
 };
 
 struct marker_amplitudes_xy{
@@ -57,10 +97,7 @@ struct marker_track_data {
     std::vector<derivative_2d_data> first_derivative;
     std::vector<derivative_2d_data> second_derivative;
     std::vector<markers_data> track;
-    marker_track_data(): amplitudes{}, first_derivative{},second_derivative{}, track{} {}
 };
-
-
 
 
 class data_parser
@@ -69,23 +106,39 @@ class data_parser
     std::vector<std::vector<markers_data>> marker_line;
     std::vector<markers_data> zero_marker_line;
     std::vector<markers_data> direction_marker_line;
+    double pixel_scale;
+    double scale_mm_len;
 public:
     data_parser();
     ~data_parser();
 
-    void parse_data(std::string filepath);
-    std::vector<markers_data> parse_line(const std::string& line);
     markers_data parse_line_to_point(const std::string& line);
 
-    void add_marker_line(std::string filepath);
-    void add_zero_line(std::string filepath);
-    void add_direction_line(std::string filepath);
+    std::vector<markers_data> add_marker_line(const std::string& filepath, int limit);
+    void append_zero_points(const std::string& filepath);
+    void append_direction_points(const std::string& filepath);
+    void append_marker_points(const std::string& filepath);
 
-    void append(const std::vector<markers_data> &points_on_step);
-    void append_marker_points(const std::vector<markers_data> &points);
+    void eval_pixel_scale();
 
     std::vector<marker_track_data> do_calc();
     marker_track_data do_calc_for_track(const std::vector<markers_data>& line_track);
+    void set_scale_mm_len(double value);
+
+
+    derivative_2d_data calc_first_derivative(int pos, const std::vector<markers_data>& data);
+    derivative_2d_data calc_second_derivative(int pos, const std::vector<derivative_2d_data>& data);
+    marker_amplitude_data calc_amplitude_for_marker_from_derivative(const std::vector<derivative_2d_data>& derivative_track, coord coordinate);
+    marker_amplitudes_xy calc_marker_amplitudes_xy(const std::vector<derivative_2d_data>& derivative_track);
+    double first_derivative(double p1, double p2, double delta);
+
+    void calc_median_velocity(shift_data& shift, const std::vector<derivative_2d_data> &derivative);
+
+    void dump_to_files(const std::string& dirpath);
+    void dump_amplitudes_data(const std::string& filepath, const marker_amplitude_data& data);
+    void dump_derivative_to_file(const std::string& filepath, const std::vector<derivative_2d_data>& derivative);
+    void dump_marker_track_to_file(const std::string& filepath, const std::vector<markers_data>& track);
+//    void dump_shifts_info_to_file(const std::string& filepath, const std::vector<markers_data>& track);
 };
 
 

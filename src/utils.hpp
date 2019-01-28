@@ -10,16 +10,15 @@ public:
     double x,y;
     point();
     point(double x, double y);
-    double dist(point other);
+    double dist(const point &other);
     std::string print();
     point operator +(const point &other) const;
     point operator -(const point &other) const;
     point operator *(double d)       const;
-    point& operator =(point&& other);
-    const point& operator =(const point& other);
-    point(const point& other);
-//    point(point& other);
-    point(point&& other);
+//    point& operator =(point&& other);
+//    const point& operator =(const point& other);
+//    point(const point& other);
+//    point(point&& other);
 };
 
 class vector_2f
@@ -32,18 +31,18 @@ public:
     double x_len;
     double y_len;
     vector_2f();
-    explicit vector_2f(point begin, point end);
+    vector_2f(point begin_inp, point end_inp);
 };
 
-class derivative_2d_data{
-public:
-    point pos;
+struct derivative_2d_data{
     double x_coord_value;
     double y_coord_value;
-    double step;
-    derivative_2d_data();
-    derivative_2d_data(const derivative_2d_data& other);
-    derivative_2d_data(derivative_2d_data&& other);
+    double time;
+    point pos;
+    int step;
+//    derivative_2d_data();
+//    derivative_2d_data(const derivative_2d_data& other);
+//    derivative_2d_data(derivative_2d_data&& other);
 };
 
 
