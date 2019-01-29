@@ -11,7 +11,7 @@ public:
         ~data_processor_api(){}
 
 	void setup_coordinates(double scale_length, const std::string& zero_point_path, const std::string& direction_point_path) {
-	    parser.set_scale_mm_len(scale_length);
+        parser.set_scale_meter_lenght(scale_length);
 	    parser.append_zero_points(zero_point_path);
 	    parser.append_direction_points(direction_point_path);
 	    parser.eval_pixel_scale();

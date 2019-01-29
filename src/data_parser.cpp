@@ -11,8 +11,6 @@
 #include <regex>
 #include <sstream>
 
-
-
 struct delta_data{
     double delta;
     int line;
@@ -20,10 +18,11 @@ struct delta_data{
     delta_data():delta(0), line(0), point(0){}
 };
 
-
-void data_parser::set_scale_mm_len(double value) {
-    scale_mm_len = value;
+void data_parser::set_scale_meter_lenght(double value) {
+    scale_meter_len = value;
 }
+
+
 
 double data_parser::first_derivative(double p1, double p2, double delta){
 //    std::cout << "first der: " << p1 << " | " << p2 << " | " << delta << std::endl;
@@ -43,14 +42,42 @@ void data_parser::calc_median_velocity(shift_data &shift, const std::vector<deri
     shift.median_velocity_y = median_velocity_y/count;
 }
 
+const double g = 9.8f;
+double calc_work_y(double mass, double shift_len_projection, double acceleration, double dt){
+    if (0 != shift_len_projection) {
+        return mass*shift_len_projection*(acceleration + g);
+    }
+    return mass*g*g*dt*dt/2.0f;
+}
+double calc_work_x(double mass, double acceleration, double dt){
+    return mass*acceleration*acceleration*dt*dt/2.0f;
+}
+
+void data_parser::calc_work_on_shift(shift_data &shift, const std::vector<derivative_2d_data> &second_derivative) {
+    shift.work_y = 0;
+    shift.work_x = 0;
+    for (int i = shift.start_pos; i < shift.end_pos; ++i) {
+        int left = i;
+        int right = i+1;
+//        double shift_projection_x = fabs(second_derivative[right].pos.x - second_derivative[left].pos.x);
+        double shift_projection_y = fabs(second_derivative[right].pos.y - second_derivative[left].pos.y);
+        double dt = second_derivative[right].time - second_derivative[left].time;
+        shift.work_x += calc_work_x(1.0f, second_derivative[right].x_coord_value, dt);
+        shift.work_y += calc_work_y(1.0f, shift_projection_y, second_derivative[right].y_coord_value, dt);
+    }
+}
+
 void data_parser::dump_to_files(const std::string &dirpath){
     std::vector<marker_track_data> data = do_calc();
+    int counter = 0;
+    std::string sufix = ".dat";
     for (auto& el : data) {
-        dump_amplitudes_data(dirpath + "/shifts_x.dat", el.amplitudes.amp_x);
-        dump_amplitudes_data(dirpath + "/shifts_y.dat", el.amplitudes.amp_y);
-        dump_derivative_to_file(dirpath + "/first_derivative.dat", el.first_derivative);
-        dump_derivative_to_file(dirpath + "/second_derivative.dat", el.second_derivative);
-        dump_marker_track_to_file(dirpath + "/track.dat", el.track);
+        std::string num = std::to_string(counter++);
+        dump_amplitudes_data(dirpath + "/shifts_x_" + num + sufix, el.amplitudes.amp_x);
+        dump_amplitudes_data(dirpath + "/shifts_y_" + num + sufix, el.amplitudes.amp_y);
+        dump_derivative_to_file(dirpath + "/first_derivative_" + num + sufix, el.first_derivative);
+        dump_derivative_to_file(dirpath + "/second_derivative_" + num + sufix, el.second_derivative);
+        dump_marker_track_to_file(dirpath + "/track_" + num + sufix, el.track);
     }
 }
 
@@ -58,7 +85,7 @@ void data_parser::dump_amplitudes_data(const std::string &filepath, const marker
     std::fstream file(filepath, std::ios_base::out);
     if (file.is_open()) {
         // Сдвиг сохраняем так: type x_shift, y_shift, start_time, end_time, median_velocity_x, median_velocity_y
-        file << "type, x_shift, y_shift, start_time, end_time, duration, start_frame, end_frame, median_velocity_x, median_velocity_y\n";
+        file << "type, x_shift, y_shift, start_time, end_time, duration, start_frame, end_frame, median_velocity_x, median_velocity_y, work_x, work_y\n";
         for (auto& el: data.shifts) {
             file << shift_data::get_text_type(el.type) << "," // type
                  << el.shift_vec.x_len << ","               // x shift
@@ -69,7 +96,9 @@ void data_parser::dump_amplitudes_data(const std::string &filepath, const marker
                  << el.start_step << ","                    // start frame number
                  << el.end_step << ","                      // end frame number
                  << el.median_velocity_x << ","             // median velocity projection to x
-                 << el.median_velocity_y << "\n";           // median velocity projection to y
+                 << el.median_velocity_y << ","             // median velocity projection to y
+                 << el.work_x << ","                        // work to move on x
+                 << el.work_y << "\n";                      // work to move on y
         }
         std::cout << "file opened [" << filepath << "]" << std::endl;
     }
@@ -99,8 +128,6 @@ void data_parser::dump_marker_track_to_file(const std::string &filepath, const s
 }
 
 
-
-
 derivative_2d_data data_parser::calc_first_derivative(int pos, const std::vector<markers_data> &data){
     int left = (pos != 0) ? pos-1 : 0;
     int right = pos;
@@ -127,7 +154,7 @@ derivative_2d_data data_parser::calc_second_derivative(int pos, const std::vecto
     return der;
 }
 
-marker_amplitude_data data_parser::calc_amplitude_for_marker_from_derivative(const std::vector<derivative_2d_data> &derivative_track, coord coordinate){
+marker_amplitude_data data_parser::calc_amplitude_for_marker_from_derivative(const std::vector<derivative_2d_data> &derivative_track, const std::vector<derivative_2d_data> &second_derivative_track, coord coordinate){
     // считаем что у нас не теряются данные по точкам с производными.
     marker_amplitude_data amp_data;
     amp_data.coord_type = coordinate;
@@ -198,20 +225,21 @@ marker_amplitude_data data_parser::calc_amplitude_for_marker_from_derivative(con
         shift.shift_vec = vector_2f(left_marker, right_marker);
         shift.type = type;
         calc_median_velocity(shift, derivative_track);
+        calc_work_on_shift(shift, second_derivative_track);
         amp_data.shifts.push_back(shift);
     }
 
     return amp_data;
 }
 
-marker_amplitudes_xy data_parser::calc_marker_amplitudes_xy(const std::vector<derivative_2d_data> &derivative_track){
+marker_amplitudes_xy data_parser::calc_marker_amplitudes_xy(const std::vector<derivative_2d_data> &derivative_track, const std::vector<derivative_2d_data> &second_derivative_track){
     marker_amplitudes_xy amps;
-    amps.amp_x = calc_amplitude_for_marker_from_derivative(derivative_track, coord::x);
-    amps.amp_y = calc_amplitude_for_marker_from_derivative(derivative_track, coord::y);
+    amps.amp_x = calc_amplitude_for_marker_from_derivative(derivative_track, second_derivative_track, coord::x);
+    amps.amp_y = calc_amplitude_for_marker_from_derivative(derivative_track, second_derivative_track, coord::y);
     return amps;
 }
 
-data_parser::data_parser(): pixel_scale(1), scale_mm_len(100){}
+data_parser::data_parser(): pixel_scale(1), scale_meter_len(100){}
 
 data_parser::~data_parser(){}
 
@@ -285,7 +313,7 @@ void data_parser::eval_pixel_scale(){
 
     if (exit) {
         double dist = zero_point.pos.dist(direction_point.pos);
-        pixel_scale = scale_mm_len/dist;
+        pixel_scale = scale_meter_len/dist;
 
     }
     std::cout << "exit: " << exit << std::endl;
@@ -322,7 +350,7 @@ marker_track_data data_parser::do_calc_for_track(const std::vector<markers_data>
         result.second_derivative.push_back(second_der);
     }
 
-    result.amplitudes = calc_marker_amplitudes_xy(result.first_derivative);
+    result.amplitudes = calc_marker_amplitudes_xy(result.first_derivative, result.second_derivative);
 
     marker_amplitude_data amp = result.amplitudes.amp_y;
     std::cout << std::dec << "mins " << amp.minima_count << std::endl;

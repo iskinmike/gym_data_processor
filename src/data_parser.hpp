@@ -7,7 +7,6 @@
 
 #include "utils.hpp"
 
-
 struct point_data{
     point pos;
     int64_t step;
@@ -46,6 +45,8 @@ struct shift_data{
     double end_time;
     double median_velocity_x;
     double median_velocity_y;
+    double work_x;
+    double work_y;
     static std::string get_text_type(shift_type type) {
         switch (type) {
         case shift_type::down:
@@ -104,7 +105,7 @@ class data_parser
     std::vector<markers_data> zero_marker_line;
     std::vector<markers_data> direction_marker_line;
     double pixel_scale;
-    double scale_mm_len;
+    double scale_meter_len;
 public:
     data_parser();
     ~data_parser();
@@ -120,16 +121,16 @@ public:
 
     std::vector<marker_track_data> do_calc();
     marker_track_data do_calc_for_track(const std::vector<markers_data>& line_track);
-    void set_scale_mm_len(double value);
-
+    void set_scale_meter_lenght(double value);
 
     derivative_2d_data calc_first_derivative(int pos, const std::vector<markers_data>& data);
     derivative_2d_data calc_second_derivative(int pos, const std::vector<derivative_2d_data>& data);
-    marker_amplitude_data calc_amplitude_for_marker_from_derivative(const std::vector<derivative_2d_data>& derivative_track, coord coordinate);
-    marker_amplitudes_xy calc_marker_amplitudes_xy(const std::vector<derivative_2d_data>& derivative_track);
+    marker_amplitude_data calc_amplitude_for_marker_from_derivative(const std::vector<derivative_2d_data>& derivative_track, const std::vector<derivative_2d_data>& second_derivative_track, coord coordinate);
+    marker_amplitudes_xy calc_marker_amplitudes_xy(const std::vector<derivative_2d_data>& derivative_track, const std::vector<derivative_2d_data>& second_derivative_track);
     double first_derivative(double p1, double p2, double delta);
 
     void calc_median_velocity(shift_data& shift, const std::vector<derivative_2d_data> &derivative);
+    void calc_work_on_shift(shift_data& shift, const std::vector<derivative_2d_data> &second_derivative);
 
     void dump_to_files(const std::string& dirpath);
     void dump_amplitudes_data(const std::string& filepath, const marker_amplitude_data& data);
