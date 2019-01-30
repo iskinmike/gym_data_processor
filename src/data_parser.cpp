@@ -18,16 +18,29 @@ struct delta_data{
     delta_data():delta(0), line(0), point(0){}
 };
 
+const double g = 9.8f;
+namespace {
+
+double calc_work_y(double mass, double shift_len_projection, double acceleration, double dt){
+    if (0 != shift_len_projection) {
+        return mass*shift_len_projection*(acceleration + g);
+    }
+    return mass*g*g*dt*dt/2.0f;
+}
+double calc_work_x(double mass, double acceleration, double dt){
+    return mass*acceleration*acceleration*dt*dt/2.0f;
+}
+}
+
+
 void data_parser::set_scale_meter_lenght(double value) {
     scale_meter_len = value;
 }
 
 
-
 double data_parser::first_derivative(double p1, double p2, double delta){
-//    std::cout << "first der: " << p1 << " | " << p2 << " | " << delta << std::endl;
-    double delta_prc = (delta == 0) ? 1.0f : delta;
-    return (double)(p2-p1)/delta_prc;
+    if (0 == delta) return 0;
+    return (double)(p2-p1)/delta;
 }
 
 void data_parser::calc_median_velocity(shift_data &shift, const std::vector<derivative_2d_data>& derivative){
@@ -40,17 +53,6 @@ void data_parser::calc_median_velocity(shift_data &shift, const std::vector<deri
     }
     shift.median_velocity_x = median_velocity_x/count;
     shift.median_velocity_y = median_velocity_y/count;
-}
-
-const double g = 9.8f;
-double calc_work_y(double mass, double shift_len_projection, double acceleration, double dt){
-    if (0 != shift_len_projection) {
-        return mass*shift_len_projection*(acceleration + g);
-    }
-    return mass*g*g*dt*dt/2.0f;
-}
-double calc_work_x(double mass, double acceleration, double dt){
-    return mass*acceleration*acceleration*dt*dt/2.0f;
 }
 
 void data_parser::calc_work_on_shift(shift_data &shift, const std::vector<derivative_2d_data> &second_derivative) {
@@ -239,7 +241,7 @@ marker_amplitudes_xy data_parser::calc_marker_amplitudes_xy(const std::vector<de
     return amps;
 }
 
-data_parser::data_parser(): pixel_scale(1), scale_meter_len(100){}
+data_parser::data_parser(): rotate_angle(0), pixel_scale(1), scale_meter_len(100), zero_pos(0,0){}
 
 data_parser::~data_parser(){}
 
@@ -289,6 +291,11 @@ void data_parser::append_marker_points(const std::string &filepath){
     marker_line.emplace_back();
     std::vector<markers_data> line = add_marker_line(filepath, -1);
     for (auto& el : line){
+        el.pos = el.pos - zero_pos; // Перенос.
+        double xp = el.pos.x;
+        double yp = el.pos.y;
+        el.pos.x = xp*cos(rotate_angle) - yp*sin(rotate_angle); // поворот на rotate_angle
+        el.pos.y = xp*sin(rotate_angle) + yp*cos(rotate_angle); // поворот
         el.pos.x *= pixel_scale;
         el.pos.y *= pixel_scale;
     }
@@ -314,12 +321,15 @@ void data_parser::eval_pixel_scale(){
     if (exit) {
         double dist = zero_point.pos.dist(direction_point.pos);
         pixel_scale = scale_meter_len/dist;
-
+        zero_pos = zero_point.pos;
+        point direction = direction_point.pos - zero_point.pos;
+        rotate_angle = atan(direction.x/direction.y);
     }
     std::cout << "exit: " << exit << std::endl;
     std::cout << "zero_point: " << zero_point.pos.print() << std::endl;
     std::cout << "direction_point: " << direction_point.pos.print() << std::endl;
     std::cout << "pixel scale: " << pixel_scale << std::endl;
+    std::cout << "rotate angle: " << rotate_angle << std::endl;
 
 }
 void data_parser::append_zero_points(const std::string &filepath){
@@ -340,12 +350,12 @@ std::vector<marker_track_data> data_parser::do_calc(){
 marker_track_data data_parser::do_calc_for_track(const std::vector<markers_data> &line_track) {
     marker_track_data result;
     result.first_derivative.clear();
-    for (int i = 0; i < line_track.size(); ++i) {
+    for (int i = 1; i < line_track.size(); ++i) {
         derivative_2d_data first_der = calc_first_derivative(i, line_track);
         result.first_derivative.push_back(first_der);
     }
 
-    for (int i = 0; i < result.first_derivative.size(); ++i) {
+    for (int i = 1; i < result.first_derivative.size(); ++i) {
         derivative_2d_data second_der = calc_second_derivative(i, result.first_derivative);
         result.second_derivative.push_back(second_der);
     }

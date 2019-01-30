@@ -104,6 +104,8 @@ class data_parser
     std::vector<std::vector<markers_data>> marker_line;
     std::vector<markers_data> zero_marker_line;
     std::vector<markers_data> direction_marker_line;
+    point zero_pos;
+    double rotate_angle; // rad
     double pixel_scale;
     double scale_meter_len;
 public:
